@@ -16,9 +16,8 @@ def test_get_utxo_request_has_utxos(get_utxo_request, get_utxo_handler, payment_
 
 FROM_SHIFT = 200
 
-def test_get_utxo_request_has_utxos_with_from(get_utxo_request, get_utxo_handler, payment_address, insert_over_thousand_utxos):
-    get_utxo_request.operation[FROM_SEQNO] = FROM_SHIFT
-    result = get_utxo_handler.get_result(get_utxo_request)
+def test_get_utxo_request_has_utxos_with_from(get_utxo_request_with_from, get_utxo_handler, payment_address, insert_over_thousand_utxos):
+    result = get_utxo_handler.get_result(get_utxo_request_with_from(FROM_SHIFT))
     assert result[STATE_PROOF]
     assert result[OUTPUTS]
     assert len(result[OUTPUTS]) == UTXO_LIMIT
@@ -28,19 +27,17 @@ def test_get_utxo_request_has_utxos_with_from(get_utxo_request, get_utxo_handler
         assert result[OUTPUTS][i-FROM_SHIFT].amount == i
 
 
-def test_get_utxo_request_has_utxos_with_from_bigger_than_utxos(get_utxo_request, get_utxo_handler, payment_address, insert_over_thousand_utxos):
-    get_utxo_request.operation[FROM_SEQNO] = 13000
-    result = get_utxo_handler.get_result(get_utxo_request)
+def test_get_utxo_request_has_utxos_with_from_bigger_than_utxos(get_utxo_request_with_from, get_utxo_handler, payment_address, insert_over_thousand_utxos):
+    result = get_utxo_handler.get_result(get_utxo_request_with_from(13000))
     assert result[STATE_PROOF]
     assert result[OUTPUTS] == []
 
 
-def test_get_utxo_request_has_utxos_with_from_between_the_numbers(get_utxo_request, get_utxo_handler, payment_address,
+def test_get_utxo_request_has_utxos_with_from_between_the_numbers(get_utxo_request_with_from, get_utxo_handler, payment_address,
                                                                   insert_over_thousand_utxos, insert_utxos_after_gap):
     gap = insert_utxos_after_gap
     # there is a gap between 1200 and 1300 seqno's for this payment address
-    get_utxo_request.operation[FROM_SEQNO] = gap - 50
-    result = get_utxo_handler.get_result(get_utxo_request)
+    result = get_utxo_handler.get_result(get_utxo_request_with_from(gap-50))
     # 2300 utxos is too many for state proof, not checking it
     assert result[OUTPUTS]
     assert len(result[OUTPUTS]) == UTXO_LIMIT

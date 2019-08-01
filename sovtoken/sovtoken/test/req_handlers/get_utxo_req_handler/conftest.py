@@ -13,6 +13,7 @@ from plenum.test.helper import sdk_json_to_request_object
 from indy.payment import build_get_payment_sources_request
 
 from stp_core.config import MSG_LEN_LIMIT
+from functools import partial
 
 
 @pytest.fixture(scope="module")
@@ -21,13 +22,19 @@ def get_utxo_handler(db_manager, bls_store):
 
 
 @pytest.fixture()
-def get_utxo_request(looper, payment_address, wallet):
-    get_utxo_request_future = build_get_payment_sources_request(wallet, None, payment_address)
-    get_utxo_request, _ = looper.loop.run_until_complete(get_utxo_request_future)
-    get_utxo_request = json.loads(get_utxo_request)
-    get_utxo_request = sdk_json_to_request_object(get_utxo_request)
-    return get_utxo_request
+def get_utxo_request_with_from(looper, payment_address, wallet):
+    def _get_utxo_request(looper, payment_address, wallet, from_seqno):
+        get_utxo_request_future = build_get_payment_sources_request(wallet, None, payment_address)
+        get_utxo_request, _ = looper.loop.run_until_complete(get_utxo_request_future)
+        get_utxo_request = json.loads(get_utxo_request)
+        get_utxo_request = sdk_json_to_request_object(get_utxo_request)
+        return get_utxo_request
 
+    return partial(_get_utxo_request, looper=looper, payment_address=payment_address, wallet=wallet)
+
+@pytest.fixture()
+def get_utxo_request(get_utxo_request_with_from):
+    return get_utxo_request_with_from(None)
 
 @pytest.fixture(scope="module")
 def insert_over_thousand_utxos(db_manager, payment_address):
